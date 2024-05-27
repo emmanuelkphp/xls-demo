@@ -51,8 +51,9 @@ class ReportController extends Controller {
 
         // Loop through each user and set cell values using the private method
         foreach ($user as $row) {
-            $this->setCellValue($objPHPExcel, $row, $rowId);
-            $rowId++;
+            /*check if employee has daily performance data*/
+            if(!isset($row['daily_performances']) || empty($row['daily_performances'])) continue;
+            $rowId = $this->setCellValue($objPHPExcel, $row, $rowId);
         }
 
         // Set column widths
@@ -76,9 +77,6 @@ class ReportController extends Controller {
 
 
     private function setCellValue($objPHPExcel, $row, $rowId) {
-        /*check if employee has daily performance data*/
-        if(!isset($row['daily_performances']) || empty($row['daily_performances'])) return;
-
         /*employee name*/
         $objPHPExcel->SetCellValue('A'.$rowId, $row['name']);
         
@@ -86,22 +84,17 @@ class ReportController extends Controller {
         $categories = !empty($row['categories']) ? implode(", ", $row['categories']) : "";
         $objPHPExcel->SetCellValue('B'.$rowId, $categories);
 
-        /*employee daily performance data*/
-        $tasks = [];
-        $datetime = "";
-        $comment = "";
-        
+        /*employee daily performance data*/ 
         if(isset($row['daily_performances']) && !empty($row['daily_performances'])){
             foreach($row['daily_performances'] as $performance){
-                $tasks[]    = $performance['task']['name'] ?? ""; //task name
-                $datetime   = $performance['datetime'] ?? "";    //datetime
-                $comment    = $performance['comment'] ?? "";    //comment
+                $objPHPExcel->SetCellValue('C'.$rowId, $performance['task']['name'] ?? ""); 
+                $objPHPExcel->SetCellValue('D'.$rowId, $performance['datetime'] ?? "");
+                $objPHPExcel->SetCellValue('E'.$rowId, $performance['comment'] ?? "");
+                $rowId = $rowId + 1;
             }
         }
 
-        $objPHPExcel->SetCellValue('C'.$rowId, implode(", ", $tasks)); 
-        $objPHPExcel->SetCellValue('D'.$rowId, $datetime);
-        $objPHPExcel->SetCellValue('E'.$rowId, $comment);
+        return $rowId;
     }
 
     private function data(){
